@@ -212,6 +212,8 @@ public class Main extends javax.swing.JFrame {
                                 Clipboard clpbrd = Toolkit.getDefaultToolkit().getSystemClipboard();
                                 clpbrd.setContents(stringSelection, null);
                             }
+                            textArea.append("IN YOUR CLIPBOARD: " + answer + "\n");
+                            textArea.setCaretPosition(textArea.getText().length());
                         } else if (!question.contains("ime's up!") && !question.contains("ING DING DING") && !line.contains("Total Points TO") && !question.contains("Points to")) {
                             StringTokenizer st = new StringTokenizer(question, " ");
                             question = "";
