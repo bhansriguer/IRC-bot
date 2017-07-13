@@ -55,11 +55,11 @@ public class Main extends javax.swing.JFrame {
 
     public void initCheats() {
         String[] files = {"b01.txt", "b02.txt", "b03.txt", "b04.txt", "b05.txt", "b06.txt", "b07.txt", "b08.txt", "b09.txt", "b10.txt", "b11.txt", "b12.txt", "b13.txt", "b14.txt", "b15.txt"};
-        String resourcesPath = "res/";
+        String resourcesPath = "/res/";
         String answer = "";
         for (String f : files) {
-            File file = new File(ClassLoader.getSystemResource(resourcesPath + f).getFile());
-            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            InputStream stream = Main.class.getResourceAsStream(resourcesPath + f);
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(stream))) {
                 String line;
                 while ((line = br.readLine()) != null) {
                     StringTokenizer st = new StringTokenizer(line, "*");
