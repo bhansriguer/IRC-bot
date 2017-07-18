@@ -170,7 +170,7 @@ public class Main extends javax.swing.JFrame {
             // Log on to the server.
             // Set nick
             writer.write("NICK " + nick + "\r\n");
-            writer.write("USER " + login + " 8 * : Java IRC Hacks Bot\r\n");
+            writer.write("USER " + login + " 8 * : " + nick + "\r\n");
             writer.flush();
 
             // Read lines from the server until it tells us we have connected.
