@@ -12,6 +12,7 @@ import java.awt.event.KeyEvent;
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -24,11 +25,12 @@ public class Main extends javax.swing.JFrame {
 
     private Questions mQuestions;
     private final ArrayList<Questions> mQuestionsList = new ArrayList<>();
+    private Random rand = new Random();
 
     // The server to connect to and our details.
     String server = "irc.freenode.net";
-    String nick = "thefighting";
-    String login = "thefighting";
+    String nick = "bhans";
+    String login = "bhans";
 
     // The channel which the bot will join.
     String channel = "#trivialand";
@@ -40,12 +42,17 @@ public class Main extends javax.swing.JFrame {
     BufferedWriter writer = null;
     BufferedReader reader = null;
 
+    // Time is in ms
+    private int randMinTime = 4000;
+    private int randMaxTime = 6000;
+
     /**
      * Creates new form Main
      */
     public Main() {
         initComponents();
-
+        tfMinTime.setText(String.valueOf(randMinTime));
+        tfMaxTime.setText(String.valueOf(randMaxTime));
         Runnable r = () -> {
             initCheats();
             localInit();
@@ -177,11 +184,21 @@ public class Main extends javax.swing.JFrame {
                     return;
                 }
             }
+            writer.write("NICKSERV identify bhans12\r\n");
+            writer.flush();
+            while ((line = reader.readLine()) != null) {
+                textArea.append(line + "\n");
+                textArea.setCaretPosition(textArea.getText().length());
+                if (line.contains("is now your hidden host")) {
+                    break;
+                }
+            }
 
             // Join the channel.
             writer.write("JOIN " + channel + "\r\n");
             writer.flush();
             // Keep reading lines from the server.
+            int hints = 0;
             while ((line = reader.readLine()) != null) {
                 if (line.toLowerCase().startsWith("ping ")) {
                     // We must respond to PINGs to avoid being disconnected.
@@ -199,20 +216,41 @@ public class Main extends javax.swing.JFrame {
                         String hint = "";
                         if (message[message.length - 2].toLowerCase().contains("hint")) {
                             hint = message[message.length - 1];
-                            String answer = confirmAnswer(hint);
+                            final String answer = confirmAnswer(hint);
                             if (!answer.equals("") && !prevAnswer.equals("")) {
                                 System.out.println("Confirmed Answer: " + answer);
                                 StringSelection stringSelection = new StringSelection(answer.toLowerCase());
                                 Clipboard clpbrd = Toolkit.getDefaultToolkit().getSystemClipboard();
                                 clpbrd.setContents(stringSelection, null);
+                                int random = rand.nextInt(randMaxTime - randMinTime) + randMinTime;
+                                new java.util.Timer().schedule(
+                                        new java.util.TimerTask() {
+                                    @Override
+                                    public void run() {
+                                        sendMessage(answer.toLowerCase());
+                                    }
+                                }, random
+                                );
+                                textArea.append("IN YOUR CLIPBOARD: " + answer + "\n");
                             } else {
-                                answer = getRegexAnswer(hint);
-                                System.out.println("regex hint: " + answer);
+                                hints++;
+                                String regexAns = getRegexAnswer(hint);
+                                System.out.println("regex hint: " + regexAns);
                                 StringSelection stringSelection = new StringSelection(answer.toLowerCase());
                                 Clipboard clpbrd = Toolkit.getDefaultToolkit().getSystemClipboard();
                                 clpbrd.setContents(stringSelection, null);
+                                if (hints == 3 && !regexAns.equals("")) {
+                                    new java.util.Timer().schedule(
+                                            new java.util.TimerTask() {
+                                        @Override
+                                        public void run() {
+                                            sendMessage(regexAns.toLowerCase());
+                                        }
+                                    }, 1000
+                                    );
+                                }
+                                textArea.append("IN YOUR CLIPBOARD: " + regexAns + "\n");
                             }
-                            textArea.append("IN YOUR CLIPBOARD: " + answer + "\n");
                             textArea.setCaretPosition(textArea.getText().length());
                         } else if (!question.contains("ime's up!") && !question.contains("ING DING DING") && !line.contains("Total Points TO") && !question.contains("Points to")) {
                             StringTokenizer st = new StringTokenizer(question, " ");
@@ -231,6 +269,7 @@ public class Main extends javax.swing.JFrame {
                             prevAnswer = answer;
                             System.out.println("Question: " + question);
                             System.out.println("Answer: " + answer);
+                            hints = 0;
                         }
                     }
                 }
@@ -239,6 +278,14 @@ public class Main extends javax.swing.JFrame {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
             System.out.println(ex.getMessage());
         }
+    }
+
+    private void setRandMinTime(int minTime) {
+        this.randMinTime = minTime;
+    }
+
+    private void setRandMaxTime(int maxTime) {
+        this.randMaxTime = maxTime;
     }
 
     /**
@@ -255,6 +302,11 @@ public class Main extends javax.swing.JFrame {
         textArea = new javax.swing.JTextArea();
         textField = new javax.swing.JTextField();
         sendButton = new javax.swing.JButton();
+        jLabel1 = new javax.swing.JLabel();
+        tfMinTime = new javax.swing.JTextField();
+        tfMaxTime = new javax.swing.JTextField();
+        jLabel2 = new javax.swing.JLabel();
+        btnSetTime = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -270,6 +322,17 @@ public class Main extends javax.swing.JFrame {
 
         sendButton.setText("Send");
 
+        jLabel1.setText("Time to send between seconds:");
+
+        jLabel2.setText("TO");
+
+        btnSetTime.setText("Set Time");
+        btnSetTime.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSetTimeActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -281,13 +344,31 @@ public class Main extends javax.swing.JFrame {
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(textField, javax.swing.GroupLayout.PREFERRED_SIZE, 675, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(sendButton, javax.swing.GroupLayout.DEFAULT_SIZE, 97, Short.MAX_VALUE)))
+                        .addComponent(sendButton, javax.swing.GroupLayout.DEFAULT_SIZE, 97, Short.MAX_VALUE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(jLabel1)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(tfMinTime, javax.swing.GroupLayout.PREFERRED_SIZE, 69, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel2)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(tfMaxTime, javax.swing.GroupLayout.PREFERRED_SIZE, 69, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnSetTime)
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel1)
+                    .addComponent(tfMinTime, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(tfMaxTime, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel2)
+                    .addComponent(btnSetTime))
+                .addGap(3, 3, 3)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 438, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
@@ -325,6 +406,12 @@ public class Main extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_textFieldKeyPressed
 
+    private void btnSetTimeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSetTimeActionPerformed
+        // TODO add your handling code here:
+        setRandMinTime(Integer.parseInt(tfMinTime.getText()));
+        setRandMaxTime(Integer.parseInt(tfMaxTime.getText()));
+    }//GEN-LAST:event_btnSetTimeActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -361,10 +448,15 @@ public class Main extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnSetTime;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JButton sendButton;
     private javax.swing.JTextArea textArea;
     private javax.swing.JTextField textField;
+    private javax.swing.JTextField tfMaxTime;
+    private javax.swing.JTextField tfMinTime;
     // End of variables declaration//GEN-END:variables
 }
