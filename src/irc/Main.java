@@ -14,6 +14,7 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.StringTokenizer;
+import java.util.Timer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -33,8 +34,8 @@ public class Main extends javax.swing.JFrame {
     String login = "bhans";
 
     // The channel which the bot will join.
-    String channel = "#trivialand";
-    String bot = "glime";
+    String channel = "#padc";
+    String bot = "warenemy";
 
     // Connect directly to the IRC server.
     Socket socket = null;
@@ -43,8 +44,11 @@ public class Main extends javax.swing.JFrame {
     BufferedReader reader = null;
 
     // Time is in ms
-    private int randMinTime = 4000;
-    private int randMaxTime = 6000;
+    private int randMinTime = 3500;
+    private int randMaxTime = 7000;
+
+    // Set bot on
+    private boolean isBotEnabled = false;
 
     /**
      * Creates new form Main
@@ -158,6 +162,8 @@ public class Main extends javax.swing.JFrame {
         textArea.setCaretPosition(textArea.getText().length());
     }
 
+    private Timer answerTimer;
+
     public void localInit() {
         try {
 
@@ -222,15 +228,17 @@ public class Main extends javax.swing.JFrame {
                                 StringSelection stringSelection = new StringSelection(answer.toLowerCase());
                                 Clipboard clpbrd = Toolkit.getDefaultToolkit().getSystemClipboard();
                                 clpbrd.setContents(stringSelection, null);
-                                int random = rand.nextInt(randMaxTime - randMinTime) + randMinTime;
-                                new java.util.Timer().schedule(
-                                        new java.util.TimerTask() {
-                                    @Override
-                                    public void run() {
-                                        sendMessage(answer.toLowerCase());
-                                    }
-                                }, random
-                                );
+                                if (isBotEnabled) {
+                                    int random = rand.nextInt(randMaxTime - randMinTime) + randMinTime;
+                                    answerTimer.schedule(
+                                            new java.util.TimerTask() {
+                                        @Override
+                                        public void run() {
+                                            sendMessage(answer.toLowerCase());
+                                        }
+                                    }, random
+                                    );
+                                }
                                 textArea.append("IN YOUR CLIPBOARD: " + answer + "\n");
                             } else {
                                 hints++;
@@ -239,20 +247,24 @@ public class Main extends javax.swing.JFrame {
                                 StringSelection stringSelection = new StringSelection(answer.toLowerCase());
                                 Clipboard clpbrd = Toolkit.getDefaultToolkit().getSystemClipboard();
                                 clpbrd.setContents(stringSelection, null);
-                                if (hints == 3 && !regexAns.equals("")) {
-                                    new java.util.Timer().schedule(
-                                            new java.util.TimerTask() {
-                                        @Override
-                                        public void run() {
-                                            sendMessage(regexAns.toLowerCase());
-                                        }
-                                    }, 1000
-                                    );
+                                if (isBotEnabled) {
+                                    if (hints == 3 && !regexAns.equals("")) {
+                                        int random = rand.nextInt(randMaxTime - randMinTime) + randMinTime;
+                                        answerTimer.schedule(
+                                                new java.util.TimerTask() {
+                                            @Override
+                                            public void run() {
+                                                sendMessage(regexAns.toLowerCase());
+                                            }
+                                        }, random
+                                        );
+                                    }
                                 }
                                 textArea.append("IN YOUR CLIPBOARD: " + regexAns + "\n");
                             }
                             textArea.setCaretPosition(textArea.getText().length());
-                        } else if (!question.contains("ime's up!") && !question.contains("ING DING DING") && !line.contains("Total Points TO") && !question.contains("Points to")) {
+                        } else if (!question.contains("ime's up!") && !question.toLowerCase().contains("ing ding ding") && !line.contains("Total Points TO") && !question.contains("Points to")) {
+                            answerTimer = new Timer();
                             StringTokenizer st = new StringTokenizer(question, " ");
                             question = "";
                             while (st.hasMoreTokens()) {
@@ -270,6 +282,10 @@ public class Main extends javax.swing.JFrame {
                             System.out.println("Question: " + question);
                             System.out.println("Answer: " + answer);
                             hints = 0;
+                        } else if (question.contains("ime's up!") || question.toLowerCase().contains("ing ding ding") || line.contains("Total Points TO") || question.contains("Points to")) {
+                            answerTimer.cancel();
+                            answerTimer.purge();
+                            System.out.println("Auto-answer cancelled!");
                         }
                     }
                 }
@@ -307,6 +323,7 @@ public class Main extends javax.swing.JFrame {
         tfMaxTime = new javax.swing.JTextField();
         jLabel2 = new javax.swing.JLabel();
         btnSetTime = new javax.swing.JButton();
+        btnIsBotEnabled = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -333,6 +350,13 @@ public class Main extends javax.swing.JFrame {
             }
         });
 
+        btnIsBotEnabled.setText("Enable Bot");
+        btnIsBotEnabled.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnIsBotEnabledActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -340,11 +364,14 @@ public class Main extends javax.swing.JFrame {
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane1)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(textField, javax.swing.GroupLayout.PREFERRED_SIZE, 675, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(sendButton, javax.swing.GroupLayout.DEFAULT_SIZE, 97, Short.MAX_VALUE))
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jScrollPane1)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addComponent(textField, javax.swing.GroupLayout.PREFERRED_SIZE, 675, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(sendButton, javax.swing.GroupLayout.DEFAULT_SIZE, 97, Short.MAX_VALUE)))
+                        .addContainerGap())
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(jLabel1)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -355,8 +382,8 @@ public class Main extends javax.swing.JFrame {
                         .addComponent(tfMaxTime, javax.swing.GroupLayout.PREFERRED_SIZE, 69, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnSetTime)
-                        .addGap(0, 0, Short.MAX_VALUE)))
-                .addContainerGap())
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(btnIsBotEnabled))))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -367,7 +394,8 @@ public class Main extends javax.swing.JFrame {
                     .addComponent(tfMinTime, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(tfMaxTime, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel2)
-                    .addComponent(btnSetTime))
+                    .addComponent(btnSetTime)
+                    .addComponent(btnIsBotEnabled))
                 .addGap(3, 3, 3)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 438, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -412,6 +440,17 @@ public class Main extends javax.swing.JFrame {
         setRandMaxTime(Integer.parseInt(tfMaxTime.getText()));
     }//GEN-LAST:event_btnSetTimeActionPerformed
 
+    private void btnIsBotEnabledActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnIsBotEnabledActionPerformed
+        // TODO add your handling code here:
+        if (isBotEnabled) {
+            isBotEnabled = false;
+            btnIsBotEnabled.setText("Enable Bot");
+        } else {
+            isBotEnabled = true;
+            btnIsBotEnabled.setText("Disable Bot");
+        }
+    }//GEN-LAST:event_btnIsBotEnabledActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -448,6 +487,7 @@ public class Main extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnIsBotEnabled;
     private javax.swing.JButton btnSetTime;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
