@@ -23,7 +23,7 @@ import java.util.logging.Logger;
  * @author bhans
  */
 public class Main extends javax.swing.JFrame {
-
+    
     private Questions mQuestions;
     private final ArrayList<Questions> mQuestionsList = new ArrayList<>();
     private Random rand = new Random();
@@ -39,7 +39,7 @@ public class Main extends javax.swing.JFrame {
 
     // Connect directly to the IRC server.
     private Socket socket = null;
-
+    
     private BufferedWriter writer = null;
     private BufferedReader reader = null;
 
@@ -63,7 +63,7 @@ public class Main extends javax.swing.JFrame {
         };
         new Thread(r).start();
     }
-
+    
     public void initCheats() {
         String[] files = {"b01.txt", "b02.txt", "b03.txt", "b04.txt", "b05.txt", "b06.txt", "b07.txt", "b08.txt", "b09.txt", "b10.txt", "b11.txt", "b12.txt", "b13.txt", "b14.txt", "b15.txt"};
         String resourcesPath = "/res/";
@@ -94,9 +94,9 @@ public class Main extends javax.swing.JFrame {
         }
         System.out.println("Done parsing data: " + mQuestionsList.size());
     }
-
+    
     private String prevAnswer = "";
-
+    
     private String getAnswer(String question) {
         String answer = "";
         for (Questions q : mQuestionsList) {
@@ -107,7 +107,7 @@ public class Main extends javax.swing.JFrame {
         }
         return answer;
     }
-
+    
     private String confirmAnswer(String hint) {
         String finalAnswer = "";
         hint = hint.trim();
@@ -125,7 +125,7 @@ public class Main extends javax.swing.JFrame {
         }
         return finalAnswer;
     }
-
+    
     private String getRegexAnswer(String regex) {
         regex = regex.trim();
         String answer = "";
@@ -144,7 +144,7 @@ public class Main extends javax.swing.JFrame {
         }
         return answer;
     }
-
+    
     public void sendMessage(String message) {
         boolean isCommand = false;
         String chanMsgAppend = "PRIVMSG " + channel + " :";
@@ -153,20 +153,27 @@ public class Main extends javax.swing.JFrame {
                 isCommand = true;
             }
             writer.write(isCommand ? "" : chanMsgAppend + message + "\r\n");
-            textArea.append(nick + ": " + message + "\n");
+            writeToTextArea(nick + ": " + message + "\n");
             writer.flush();
         } catch (IOException ex) {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
             System.out.println(ex.getMessage());
         }
-        textArea.setCaretPosition(textArea.getText().length());
     }
-
+    
+    private void writeToTextArea(String message) {
+        textArea.append(message);
+        textArea.setCaretPosition(textArea.getText().length());
+        if (textArea.getLineCount() > 1000) {
+            textArea.setText("");
+        }
+    }
+    
     private Timer answerTimer;
-
+    
     public void localInit() {
         try {
-
+            
             socket = new Socket(server, 6667);
             writer = new BufferedWriter(
                     new OutputStreamWriter(socket.getOutputStream()));
@@ -186,15 +193,14 @@ public class Main extends javax.swing.JFrame {
                     // We are now logged in.
                     break;
                 } else if (line.indexOf("433") >= 0) {
-                    textArea.append("Nickname is already in use.\n");
+                    writeToTextArea("Nickname is already in use.\n");
                     return;
                 }
             }
             writer.write("NICKSERV identify bhans12\r\n");
             writer.flush();
             while ((line = reader.readLine()) != null) {
-                textArea.append(line + "\n");
-                textArea.setCaretPosition(textArea.getText().length());
+                writeToTextArea(line + "\n");
                 if (line.contains("is now your hidden host")) {
                     break;
                 }
@@ -214,8 +220,7 @@ public class Main extends javax.swing.JFrame {
                     String name = line.split("!")[0];
                     name = name.substring(1, name.length());
                     String[] message = line.split(":");
-                    textArea.append(name + ": " + message[message.length - 1] + "\n");
-                    textArea.setCaretPosition(textArea.getText().length());
+                    writeToTextArea(name + ": " + message[message.length - 1] + "\n");
                     // Answer trivias
                     if (name.toLowerCase().equals(bot)) {
                         String question = message[message.length - 1];
@@ -239,7 +244,7 @@ public class Main extends javax.swing.JFrame {
                                     }, random
                                     );
                                 }
-                                textArea.append("IN YOUR CLIPBOARD: " + answer + "\n");
+                                writeToTextArea("IN YOUR CLIPBOARD: " + answer + "\n");
                             } else {
                                 hints++;
                                 String regexAns = getRegexAnswer(hint);
@@ -260,9 +265,8 @@ public class Main extends javax.swing.JFrame {
                                         );
                                     }
                                 }
-                                textArea.append("IN YOUR CLIPBOARD: " + regexAns + "\n");
+                                writeToTextArea("IN YOUR CLIPBOARD: " + regexAns + "\n");
                             }
-                            textArea.setCaretPosition(textArea.getText().length());
                         } else if (!question.contains("ime's up!") && !question.toLowerCase().contains("ing ding ding") && !line.contains("Total Points TO") && !question.contains("Points to")) {
                             answerTimer = new Timer();
                             StringTokenizer st = new StringTokenizer(question, " ");
@@ -285,7 +289,7 @@ public class Main extends javax.swing.JFrame {
                         } else if (question.contains("ime's up!") || question.toLowerCase().contains("ing ding ding") || line.contains("Total Points TO") || question.contains("Points to")) {
                             answerTimer.cancel();
                             answerTimer.purge();
-                            System.out.println("Auto-answer cancelled!");
+                            writeToTextArea("System: Auto-answer cancelled!");
                         }
                     }
                 }
@@ -324,11 +328,11 @@ public class Main extends javax.swing.JFrame {
     public void setBot(String bot) {
         this.bot = bot;
     }
-
+    
     private void setRandMinTime(int minTime) {
         this.randMinTime = minTime;
     }
-
+    
     private void setRandMaxTime(int maxTime) {
         this.randMaxTime = maxTime;
     }
