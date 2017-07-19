@@ -29,19 +29,19 @@ public class Main extends javax.swing.JFrame {
     private Random rand = new Random();
 
     // The server to connect to and our details.
-    String server = "irc.freenode.net";
-    String nick = "bhans";
-    String login = "bhans";
+    private String server = "";
+    private String nick = "";
+    private String login = "";
 
     // The channel which the bot will join.
-    String channel = "#padc";
-    String bot = "warenemy";
+    private String channel = "";
+    private String bot = "";
 
     // Connect directly to the IRC server.
-    Socket socket = null;
+    private Socket socket = null;
 
-    BufferedWriter writer = null;
-    BufferedReader reader = null;
+    private BufferedWriter writer = null;
+    private BufferedReader reader = null;
 
     // Time is in ms
     private int randMinTime = 3500;
@@ -296,6 +296,35 @@ public class Main extends javax.swing.JFrame {
         }
     }
 
+    /**
+     * @param server the server to set
+     */
+    public void setServer(String server) {
+        this.server = server;
+    }
+
+    /**
+     * @param nick the nick to set
+     */
+    public void setNick(String nick) {
+        this.nick = nick;
+        this.login = nick;
+    }
+
+    /**
+     * @param channel the channel to set
+     */
+    public void setChannel(String channel) {
+        this.channel = channel;
+    }
+
+    /**
+     * @param bot the bot to set
+     */
+    public void setBot(String bot) {
+        this.bot = bot;
+    }
+
     private void setRandMinTime(int minTime) {
         this.randMinTime = minTime;
     }
@@ -499,4 +528,5 @@ public class Main extends javax.swing.JFrame {
     private javax.swing.JTextField tfMaxTime;
     private javax.swing.JTextField tfMinTime;
     // End of variables declaration//GEN-END:variables
+
 }
