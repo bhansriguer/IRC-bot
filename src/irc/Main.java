@@ -23,7 +23,7 @@ import java.util.logging.Logger;
  * @author bhans
  */
 public class Main extends javax.swing.JFrame {
-    
+
     private Questions mQuestions;
     private final ArrayList<Questions> mQuestionsList = new ArrayList<>();
     private Random rand = new Random();
@@ -32,6 +32,7 @@ public class Main extends javax.swing.JFrame {
     private String server = "";
     private String nick = "";
     private String login = "";
+    private String password = "";
 
     // The channel which the bot will join.
     private String channel = "";
@@ -39,7 +40,7 @@ public class Main extends javax.swing.JFrame {
 
     // Connect directly to the IRC server.
     private Socket socket = null;
-    
+
     private BufferedWriter writer = null;
     private BufferedReader reader = null;
 
@@ -63,7 +64,7 @@ public class Main extends javax.swing.JFrame {
         };
         new Thread(r).start();
     }
-    
+
     public void initCheats() {
         String[] files = {"b01.txt", "b02.txt", "b03.txt", "b04.txt", "b05.txt", "b06.txt", "b07.txt", "b08.txt", "b09.txt", "b10.txt", "b11.txt", "b12.txt", "b13.txt", "b14.txt", "b15.txt"};
         String resourcesPath = "/res/";
@@ -94,9 +95,9 @@ public class Main extends javax.swing.JFrame {
         }
         System.out.println("Done parsing data: " + mQuestionsList.size());
     }
-    
+
     private String prevAnswer = "";
-    
+
     private String getAnswer(String question) {
         String answer = "";
         for (Questions q : mQuestionsList) {
@@ -107,7 +108,7 @@ public class Main extends javax.swing.JFrame {
         }
         return answer;
     }
-    
+
     private String confirmAnswer(String hint) {
         String finalAnswer = "";
         hint = hint.trim();
@@ -125,7 +126,7 @@ public class Main extends javax.swing.JFrame {
         }
         return finalAnswer;
     }
-    
+
     private String getRegexAnswer(String regex) {
         regex = regex.trim();
         String answer = "";
@@ -144,7 +145,7 @@ public class Main extends javax.swing.JFrame {
         }
         return answer;
     }
-    
+
     public void sendMessage(String message) {
         boolean isCommand = false;
         String chanMsgAppend = "PRIVMSG " + channel + " :";
@@ -160,7 +161,7 @@ public class Main extends javax.swing.JFrame {
             System.out.println(ex.getMessage());
         }
     }
-    
+
     private void writeToTextArea(String message) {
         textArea.append(message);
         textArea.setCaretPosition(textArea.getText().length());
@@ -168,12 +169,17 @@ public class Main extends javax.swing.JFrame {
             textArea.setText("");
         }
     }
-    
+
     private Timer answerTimer;
-    
+
     public void localInit() {
         try {
-            
+            // If you want to use proxies, please fill in this and uncomment
+//            System.setProperty("java.net.useSystemProxies", "true");
+//            System.setProperty("socksProxyHost", "192.168.227.100");
+//            System.setProperty("socksProxyPort", "9666");
+//            System.setProperty("socksProxyVersion", "5");
+
             socket = new Socket(server, 6667);
             writer = new BufferedWriter(
                     new OutputStreamWriter(socket.getOutputStream()));
@@ -197,12 +203,18 @@ public class Main extends javax.swing.JFrame {
                     return;
                 }
             }
-            writer.write("NICKSERV identify bhans12\r\n");
-            writer.flush();
-            while ((line = reader.readLine()) != null) {
-                writeToTextArea(line + "\n");
-                if (line.contains("is now your hidden host")) {
-                    break;
+
+            if (!password.equals("")) {
+                writer.write("NICKSERV identify bhans12\r\n");
+                writer.flush();
+                while ((line = reader.readLine()) != null) {
+                    writeToTextArea(line + "\n");
+                    if (line.contains("is now your hidden host")) {
+                        break;
+                    } else if (line.contains("not a registered nickname")) {
+                        writeToTextArea("not a registered nick! \n");
+                        break;
+                    }
                 }
             }
 
@@ -214,6 +226,7 @@ public class Main extends javax.swing.JFrame {
             while ((line = reader.readLine()) != null) {
                 if (line.toLowerCase().startsWith("ping ")) {
                     // We must respond to PINGs to avoid being disconnected.
+                    System.out.println("Pinged!: " + line);
                     writer.write("PONG " + line.substring(5) + "\r\n");
                     writer.flush();
                 } else {
@@ -222,7 +235,7 @@ public class Main extends javax.swing.JFrame {
                     String[] message = line.split(":");
                     writeToTextArea(name + ": " + message[message.length - 1] + "\n");
                     // Answer trivias
-                    if (name.toLowerCase().equals(bot)) {
+                    if (name.toLowerCase().equals(bot.toLowerCase())) {
                         String question = message[message.length - 1];
                         String hint = "";
                         if (message[message.length - 2].toLowerCase().contains("hint")) {
@@ -287,9 +300,11 @@ public class Main extends javax.swing.JFrame {
                             System.out.println("Answer: " + answer);
                             hints = 0;
                         } else if (question.contains("ime's up!") || question.toLowerCase().contains("ing ding ding") || line.contains("Total Points TO") || question.contains("Points to")) {
-                            answerTimer.cancel();
-                            answerTimer.purge();
-                            writeToTextArea("System: Auto-answer cancelled!");
+                            if (answerTimer != null) {
+                                answerTimer.cancel();
+                                answerTimer.purge();
+                                writeToTextArea("System: Auto-answer cancelled!\n");
+                            }
                         }
                     }
                 }
@@ -322,17 +337,21 @@ public class Main extends javax.swing.JFrame {
         this.channel = channel;
     }
 
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
     /**
      * @param bot the bot to set
      */
     public void setBot(String bot) {
         this.bot = bot;
     }
-    
+
     private void setRandMinTime(int minTime) {
         this.randMinTime = minTime;
     }
-    
+
     private void setRandMaxTime(int maxTime) {
         this.randMaxTime = maxTime;
     }
