@@ -5,6 +5,8 @@
  */
 package irc;
 
+import java.util.Arrays;
+
 /**
  *
  * @author bhans
@@ -79,10 +81,6 @@ public class Credentials extends javax.swing.JFrame {
         tfBot.setText("bhans");
 
         jLabel5.setText("Password:");
-
-        tf_proxyHost.setText("127.0.0.1");
-
-        tf_proxyPort.setText("9666");
 
         jLabel6.setText("Proxy:");
 
@@ -190,7 +188,8 @@ public class Credentials extends javax.swing.JFrame {
         main.setNick(tfNick.getText());
         main.setChannel(tfChannel.getText());
         main.setBot(tfBot.getText());
-        main.setPassword(pf_password.getPassword().toString());
+        main.setPassword(String.valueOf(pf_password.getPassword()));
+        System.out.println(String.valueOf(pf_password.getPassword()));
         main.setProxyHost(tf_proxyHost.getText());
         main.setProxyPort(tf_proxyPort.getText());
         main.setVisible(true);
