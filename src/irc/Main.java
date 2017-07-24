@@ -33,6 +33,8 @@ public class Main extends javax.swing.JFrame {
     private String nick = "";
     private String login = "";
     private String password = "";
+    private String proxy_host = "";
+    private String proxy_port = "";
 
     // The channel which the bot will join.
     private String channel = "";
@@ -174,11 +176,13 @@ public class Main extends javax.swing.JFrame {
 
     public void localInit() {
         try {
-            // If you want to use proxies, please fill in this and uncomment
-//            System.setProperty("java.net.useSystemProxies", "true");
-//            System.setProperty("socksProxyHost", "192.168.227.100");
-//            System.setProperty("socksProxyPort", "9666");
-//            System.setProperty("socksProxyVersion", "5");
+            // Proxy
+            if (!proxy_host.equals("") && !proxy_port.equals("")) {
+                System.setProperty("java.net.useSystemProxies", "true");
+                System.setProperty("socksProxyHost", proxy_host);
+                System.setProperty("socksProxyPort", proxy_port);
+                System.setProperty("socksProxyVersion", "5");
+            }
 
             socket = new Socket(server, 6667);
             writer = new BufferedWriter(
@@ -339,6 +343,14 @@ public class Main extends javax.swing.JFrame {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public void setProxyHost(String proxyHost) {
+        this.proxy_host = proxyHost;
+    }
+
+    public void setProxyPort(String proxyPort) {
+        this.proxy_port = proxyPort;
     }
 
     /**
